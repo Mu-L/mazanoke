@@ -70,7 +70,7 @@ app.config = {
     useWebWorker: true,
     preserveExif: false,
     fileType: "image/png",
-    libURL: "./browser-image-compression.js",
+    libURL: `${location.origin}/assets/vendor/browser-image-compression.js`,
     alwaysKeepResolution: true,
   },
   qualityLimit: {
@@ -93,7 +93,7 @@ app.config.avifPreProcessOptions = {
   useWebWorker: true,
   preserveExif: false,
   fileType: "image/png",
-  libURL: "./browser-image-compression.js",
+  libURL: `${location.origin}/assets/vendor/browser-image-compression.js`,
   alwaysKeepResolution: true,
 };
 
