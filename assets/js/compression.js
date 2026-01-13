@@ -151,7 +151,7 @@ async function createCompressionOptions(currentProgress, file) {
     onProgress: currentProgress,
     preserveExif: false,
     fileType: selectedFormat || undefined,
-    libURL: "./browser-image-compression.js",
+    libURL: `${location.origin}/assets/vendor/browser-image-compression.js`,
     alwaysKeepResolution: true,
   };
   if (state.controller) {
