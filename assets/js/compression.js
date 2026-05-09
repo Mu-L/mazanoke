@@ -2,7 +2,7 @@
  * Adding support for more image formats
  * =====================================
  * 1. Update accepted file types in the HTML input: `<input id="compress" type="file" accept="...">`.
- * 2. Register the new mime types in: `isFileTypeSupported()`, `mimeToExtension()`.  
+ * 2. Register the new mime types in: `isFileTypeSupported()`, `mimeToExtension()`.
  * 3. Preprocess to canvas-compatible blob in `preProcessImage()`, before compression `compressImageQueue()`.
  * 4. If the final output format, `selectedFormat`, is not JPG, WebP, or PNG, it needs to be encoded in `postProcessImage()`.
  * 5. If external libraries were used, they need to be included in `service-worker.js` to provide cached offline use.
@@ -21,7 +21,7 @@ function compressImage(event) {
   state.compressProcessedCount = 0;
   state.fileProgressMap = {};
   state.isCompressing = true;
-  
+
   document.body.classList.add("compressing--is-active");
   ui.actions.dropZone.classList.add("hidden");
   ui.actions.abort.classList.remove("hidden");
@@ -40,10 +40,12 @@ async function compressImageQueue() {
   const file = state.compressQueue[0];
   const i = state.compressProcessedCount;
 
-  console.log('Input file: ', file);
+  console.log("Input file: ", file);
 
   if (!isFileTypeSupported(file.type, file)) {
-    console.error(`Unsupported file type: ${file.type}. Skipping "${file.name}".`);
+    console.error(
+      `Unsupported file type: ${file.type}. Skipping "${file.name}".`,
+    );
     ui.progress.text.innerHTML = `Unsupported file "<div class='progress-file-name'>${file.name}</div>"`;
     state.compressQueue.shift();
     await compressImageQueue();
@@ -51,35 +53,53 @@ async function compressImageQueue() {
   }
 
   // Decode and parse image to validate options.
-  const options = await createCompressionOptions((p) => currentProgress(p, i, file.name), file);
+  const options = await createCompressionOptions(
+    (p) => currentProgress(p, i, file.name),
+    file,
+  );
   // Preprocess image when needed (e.g., decoding or precompress image).
   const { preProcessedImage } = await preProcessImage(file);
-  const selectedFormat = getCheckedValue(ui.inputs.formatSelect)
+  const selectedFormat = getCheckedValue(ui.inputs.formatSelect);
 
   // Perform image compression
-  lib.imageCompression((preProcessedImage || file), options)
+  lib
+    .imageCompression(preProcessedImage || file, options)
     .then((compressedImage) =>
       getImageDimensions(compressedImage).then((dimensions) => ({
         image: compressedImage,
         ...dimensions,
-      }))
+      })),
     )
     .then(({ image, outputImageWidth, outputImageHeight }) =>
-      generateThumbnailImage(image, { outputImageWidth, outputImageHeight })
+      generateThumbnailImage(image, { outputImageWidth, outputImageHeight }),
     )
-    .then(({ sourceImage, thumbnailImage, outputImageWidth, outputImageHeight }) =>
-      // Postprocess image when needed (e.g., finalize by converting to the targeted file format)
-      postProcessImage(sourceImage, selectedFormat, { outputImageWidth, outputImageHeight }).then(
-        ({ postProcessedImage }) => ({
+    .then(
+      ({ sourceImage, thumbnailImage, outputImageWidth, outputImageHeight }) =>
+        // Postprocess image when needed (e.g., finalize by converting to the targeted file format)
+        postProcessImage(sourceImage, selectedFormat, {
+          outputImageWidth,
+          outputImageHeight,
+        }).then(({ postProcessedImage }) => ({
           postProcessedImage,
           thumbnailImage,
           outputImageWidth,
-          outputImageHeight
-        })
-      )
+          outputImageHeight,
+        })),
     )
-    .then(({ postProcessedImage, thumbnailImage, outputImageWidth, outputImageHeight }) =>
-      handleCompressionResult(file, postProcessedImage, thumbnailImage, outputImageWidth, outputImageHeight)
+    .then(
+      ({
+        postProcessedImage,
+        thumbnailImage,
+        outputImageWidth,
+        outputImageHeight,
+      }) =>
+        handleCompressionResult(
+          file,
+          postProcessedImage,
+          thumbnailImage,
+          outputImageWidth,
+          outputImageHeight,
+        ),
     )
     .catch((error) => console.error(error.message))
     .finally(() => {
@@ -88,7 +108,9 @@ async function compressImageQueue() {
       if (state.compressProcessedCount === 1) {
         selectSubpage("output");
       }
-      resetCompressionState(state.compressProcessedCount === state.compressQueueTotal);
+      resetCompressionState(
+        state.compressProcessedCount === state.compressQueueTotal,
+      );
       if (state.compressProcessedCount < state.compressQueueTotal) {
         compressImageQueue();
       }
@@ -97,7 +119,7 @@ async function compressImageQueue() {
   function currentProgress(p, index, fileName) {
     const overallProgress = calculateOverallProgress(
       state.fileProgressMap,
-      state.compressQueueTotal
+      state.compressQueueTotal,
     );
     const fileNameShort =
       fileName.length > 15 ? fileName.slice(0, 12) + "..." : fileName;
@@ -111,7 +133,10 @@ async function compressImageQueue() {
     ui.progress.bar.style.width = overallProgress + "%";
     console.log(`Optimizing "${fileNameShort}" (${overallProgress}%)`);
 
-    if (p === 100 && state.compressProcessedCount === state.compressQueueTotal - 1) {
+    if (
+      p === 100 &&
+      state.compressProcessedCount === state.compressQueueTotal - 1
+    ) {
       ui.progress.text.innerHTML = `
         <div class="badge badge--success pt-2xs pb-2xs bg:surface">
           <div class="badge-text flex items-center gap-3xs">
@@ -128,16 +153,26 @@ async function createCompressionOptions(currentProgress, file) {
   const compressMethod = getCheckedValue(ui.inputs.compressMethod);
   const dimensionMethod = getCheckedValue(ui.inputs.dimensionMethod);
   const maxWeight = getMaxWeight();
-  const quality = Math.min(Math.max(parseFloat(ui.inputs.quality.value) / 100, 0), 1);
+  const quality = Math.min(
+    Math.max(parseFloat(ui.inputs.quality.value) / 100, 0),
+    1,
+  );
   let { inputFileType, selectedFormat } = getFileType(file);
 
   selectedFormat = resolveFinalFormat(inputFileType, selectedFormat);
   const limitDimensions = await getLimitDimensions(file, dimensionMethod);
 
-  console.log("Input image file size: ", (file.size / 1024 / 1024).toFixed(3), "MB");
+  console.log(
+    "Input image file size: ",
+    (file.size / 1024 / 1024).toFixed(3),
+    "MB",
+  );
 
   const options = {
-    maxSizeMB: compressMethod === "limitWeight" ? maxWeight : (file.size / 1024 / 1024).toFixed(3),
+    maxSizeMB:
+      compressMethod === "limitWeight"
+        ? maxWeight
+        : (file.size / 1024 / 1024).toFixed(3),
     initialQuality: compressMethod === "quality" ? quality : undefined,
     maxWidthOrHeight: dimensionMethod === "limit" ? limitDimensions : undefined,
     useWebWorker: true,
@@ -156,7 +191,11 @@ async function createCompressionOptions(currentProgress, file) {
 }
 
 async function preProcessImage(file) {
-  if (file.type === "image/heic" || file.type === "image/heif" || isHeicExt(file)) {
+  if (
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    isHeicExt(file)
+  ) {
     return await preProcessHeic(file);
   }
 
@@ -164,11 +203,18 @@ async function preProcessImage(file) {
     return await preProcessAvif(file);
   }
 
-  if (file.type === "image/vnd.microsoft.icon" || file.type === "image/x-icon") {
+  if (
+    file.type === "image/vnd.microsoft.icon" ||
+    file.type === "image/x-icon"
+  ) {
     return await preProcessIco(file);
   }
 
-  if (file.type === "image/tiff" || file.type === "image/dng" || file.type === "image/x-adobe-dng") {
+  if (
+    file.type === "image/tiff" ||
+    file.type === "image/dng" ||
+    file.type === "image/x-adobe-dng"
+  ) {
     return await preProcessTiff(file);
   }
 
@@ -176,7 +222,7 @@ async function preProcessImage(file) {
     try {
       return await preProcessSvg(file);
     } catch {
-      console.warn('Could not preprocess SVG');
+      console.warn("Could not preprocess SVG");
     }
   }
 
@@ -216,17 +262,26 @@ async function preProcessTiff(file) {
   const ifds = lib.utif.decode(arrayBuffer);
   lib.utif.decodeImage(arrayBuffer, ifds[0]);
   const rgba = lib.utif.toRGBA8(ifds[0]);
-  const parsedTiff = await encodeImageRgbaToBlob(rgba, ifds[0].width, ifds[0].height, "image/png", 1);
-  return { preProcessedImage: parsedTiff, preProcessedNewFileType: "image/png" };
+  const parsedTiff = await encodeImageRgbaToBlob(
+    rgba,
+    ifds[0].width,
+    ifds[0].height,
+    "image/png",
+    1,
+  );
+  return {
+    preProcessedImage: parsedTiff,
+    preProcessedNewFileType: "image/png",
+  };
 }
 
 /**
  * Preprocess an SVG image by checking for width and height attributes and
  * adding them if missing
- * 
+ *
  * This sidesteps an issue in certain versions of Firefox in which SVG files
  * without those attributes fail to load within the canvas during processing
- * 
+ *
  * @param {File} file - The image to process
  * @returns {Object} - An object containing:
  *   @property {File} - The preprocessed image
@@ -238,37 +293,47 @@ async function preProcessSvg(file) {
   const text = await file.text();
   const parser = new DOMParser();
 
-  const svgDocument = parser.parseFromString(text, 'image/svg+xml');
-  const svgElement = svgDocument.querySelector('svg');
-  const widthAttribute = svgElement.getAttribute('width');
-  const heightAttribute = svgElement.getAttribute('height');
+  const svgDocument = parser.parseFromString(text, "image/svg+xml");
+  const svgElement = svgDocument.querySelector("svg");
+  const widthAttribute = svgElement.getAttribute("width");
+  const heightAttribute = svgElement.getAttribute("height");
 
   if (widthAttribute && heightAttribute) {
-    return { preProcessedImage: file, preProcessedNewFileType: "image/svg+xml" };
+    return {
+      preProcessedImage: file,
+      preProcessedNewFileType: "image/svg+xml",
+    };
   }
 
-  const viewBox = svgElement.getAttribute('viewBox');
-  const [minX, minY, width, height] = 
-    viewBox?.split(' ').map(part => Number(part)) ?? [ 0, 0, 2_048, 2_048];
+  const viewBox = svgElement.getAttribute("viewBox");
+  const [minX, minY, width, height] = viewBox
+    ?.split(" ")
+    .map((part) => Number(part)) ?? [0, 0, 2048, 2048];
 
-  svgElement.setAttribute('width', width - minX);
-  svgElement.setAttribute('height', height - minY);
+  svgElement.setAttribute("width", width - minX);
+  svgElement.setAttribute("height", height - minY);
 
   const serializer = new XMLSerializer();
 
   const updatedFile = new File(
-    [ serializer.serializeToString(svgDocument) ],
-    file.name, 
-    { type: 'image/svg+xml' }
+    [serializer.serializeToString(svgDocument)],
+    file.name,
+    { type: "image/svg+xml" },
   );
 
-  return { preProcessedImage: updatedFile, preProcessedNewFileType: "image/svg+xml" };
+  return {
+    preProcessedImage: updatedFile,
+    preProcessedNewFileType: "image/svg+xml",
+  };
 }
 
 async function postProcessImage(file, selectedFormat, dimensions) {
-  console.log('Post-processing...');
+  console.log("Post-processing...");
 
-  if (selectedFormat === "image/vnd.microsoft.icon" || selectedFormat === "image/x-icon") {
+  if (
+    selectedFormat === "image/vnd.microsoft.icon" ||
+    selectedFormat === "image/x-icon"
+  ) {
     // Convert the compressed image to ICO.
     file = await postProcessToIco(file);
   }
@@ -279,7 +344,10 @@ async function postProcessToIco(pngFile) {
   const inputs = [{ png: pngFile, ignoreSize: true }];
 
   try {
-    return await new lib.pngToIco().convertToBlobAsync(inputs, 'image/vnd.microsoft.icon');
+    return await new lib.pngToIco().convertToBlobAsync(
+      inputs,
+      "image/vnd.microsoft.icon",
+    );
   } catch (e) {
     console.error(e);
     const msg = e.message;
@@ -289,46 +357,64 @@ async function postProcessToIco(pngFile) {
   }
 }
 
-function decodeImageBufferToBlob(buffer, outputType = 'image/png', quality = 1) {
+function decodeImageBufferToBlob(
+  buffer,
+  outputType = "image/png",
+  quality = 1,
+) {
   return new Promise((resolve, reject) => {
-    const blob = new Blob([buffer], { type: 'image/png' });
+    const blob = new Blob([buffer], { type: "image/png" });
     const url = URL.createObjectURL(blob);
     const img = new Image();
 
     img.onload = () => {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0);
-      canvas.toBlob((resultBlob) => {
-        URL.revokeObjectURL(url);
-        if (resultBlob) resolve(resultBlob);
-        else reject(new Error('Failed to create blob'));
-      }, outputType, quality);
+      canvas.toBlob(
+        (resultBlob) => {
+          URL.revokeObjectURL(url);
+          if (resultBlob) resolve(resultBlob);
+          else reject(new Error("Failed to create blob"));
+        },
+        outputType,
+        quality,
+      );
     };
 
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Failed to load image'));
+      reject(new Error("Failed to load image"));
     };
 
     img.src = url;
   });
 }
 
-function encodeImageRgbaToBlob(rgba, width, height, outputType = 'image/png', quality = 1) {
+function encodeImageRgbaToBlob(
+  rgba,
+  width,
+  height,
+  outputType = "image/png",
+  quality = 1,
+) {
   return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const imageData = new ImageData(new Uint8ClampedArray(rgba), width, height);
     ctx.putImageData(imageData, 0, 0);
-    canvas.toBlob(blob => {
-      if (blob) resolve(blob);
-      else reject(new Error('Failed to create blob'));
-    }, outputType, quality);
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Failed to create blob"));
+      },
+      outputType,
+      quality,
+    );
   });
 }
 
@@ -340,14 +426,20 @@ async function getLimitDimensions(file, dimensionMethod) {
   if (["image/heif", "image/heic"].includes(file.type) || isHeicExt(file)) {
     const buffer = await file.arrayBuffer();
     const img = new lib.libheif.HeifDecoder().decode(buffer)[0];
-    return await getAdjustedDimensions({ width: img.get_width(), height: img.get_height() }, limit);
+    return await getAdjustedDimensions(
+      { width: img.get_width(), height: img.get_height() },
+      limit,
+    );
   }
 
   if (file.type === "image/tiff") {
     const buffer = await file.arrayBuffer();
     const ifds = lib.utif.decode(buffer);
     lib.utif.decodeImage(buffer, ifds[0]);
-    return await getAdjustedDimensions({ width: ifds[0].width, height: ifds[0].height }, limit);
+    return await getAdjustedDimensions(
+      { width: ifds[0].width, height: ifds[0].height },
+      limit,
+    );
   }
 
   return await getAdjustedDimensions({ imageBlob: file }, limit);
@@ -355,7 +447,9 @@ async function getLimitDimensions(file, dimensionMethod) {
 
 function getMaxWeight() {
   const weight = parseFloat(ui.inputs.limitWeight.value);
-  return ui.inputs.limitWeightUnit.value.toUpperCase() === "KB" ? weight / 1024 : weight;
+  return ui.inputs.limitWeightUnit.value.toUpperCase() === "KB"
+    ? weight / 1024
+    : weight;
 }
 
 function resolveFinalFormat(inputType, userFormat) {
@@ -368,19 +462,29 @@ function resolveFinalFormat(inputType, userFormat) {
 
 async function generateThumbnailImage(file, dimensions) {
   const sourceImage = file;
-  const thumbnailImage = await lib.imageCompression(file, config.thumbnailOptions);
+  const thumbnailImage = await lib.imageCompression(
+    file,
+    config.thumbnailOptions,
+  );
   return { thumbnailImage, sourceImage, ...dimensions };
 }
 
-async function handleCompressionResult(file, output, thumbnailBlob, outputImageWidth, outputImageHeight) {
+async function handleCompressionResult(
+  file,
+  output,
+  thumbnailBlob,
+  outputImageWidth,
+  outputImageHeight,
+) {
   const { outputFileExtension, selectedFormat } = getFileType(file);
   const outputImageBlob = URL.createObjectURL(output);
 
-  const { renamedFileName, isBrowserDefaultFileName } = renameBrowserDefaultFileName(file.name);
+  const { renamedFileName, isBrowserDefaultFileName } =
+    renameBrowserDefaultFileName(file.name);
   const outputFileNameText = updateFileExtension(
     isBrowserDefaultFileName ? renamedFileName : file.name,
     outputFileExtension,
-    selectedFormat
+    selectedFormat,
   );
 
   const inputFileSize = parseFloat((file.size / 1024 / 1024).toFixed(3));
@@ -413,7 +517,7 @@ async function handleCompressionResult(file, output, thumbnailBlob, outputImageW
   const wrapper = document.createElement("div");
   wrapper.innerHTML = outputHTML.trim();
   ui.output.content.prepend(wrapper.firstChild);
-  await updateImageCounter(1).then( () => updateOutputEmptyState());
+  await updateImageCounter(1).then(() => updateOutputEmptyState());
 }
 
 function calculateOverallProgress(progressMap, totalFiles) {
@@ -441,7 +545,7 @@ function resetCompressionState(isAllProcessed, aborted) {
     ui.progress.bar.style.width = "100%";
 
     setTimeout(() => {
-      // Delay state reset to allow "Done" message to remain 
+      // Delay state reset to allow "Done" message to remain
       resetUI();
       state.isCompressing = false;
     }, 1000);
@@ -454,4 +558,3 @@ function resetCompressionState(isAllProcessed, aborted) {
     ui.progress.bar.style.width = "0%";
   }
 }
-
