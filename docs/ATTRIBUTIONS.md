@@ -36,19 +36,11 @@ MAZANOKE would not be possible without the projects listed here.
 - **Version**: v0.23.0
 - **Usage**: Parsing ICO file type.
 
-### PNG2ICOjs
-
-- **Author:** Luke Vo
-- **License**: [GNU General Public License v3.0](https://github.com/datvm/PNG2ICOjs/blob/master/LICENSE)
-- **Source**: https://github.com/datvm/PNG2ICOjs
-- **Version**: 1.0.1
-- **Usage**: Encoding ICO file type.
-
 ### UTIF.js
 
 - **Author:** Photopea
 - **License**: [MIT License](https://github.com/photopea/UTIF.js/blob/master/LICENSE)
-- **Source**: https://github.com/datvm/PNG2ICOjs
+- **Source**: https://github.com/photopea/UTIF.js
 - **Version**: 3.1.0
 - **Usage**: Decoding TIFF-related file types.
 

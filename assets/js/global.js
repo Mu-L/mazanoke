@@ -4,7 +4,9 @@ app.ui = {
   dialogs: {
     installPWA: document.getElementById("installPWADialog"),
     updateToast: document.getElementById("updateToast"),
-    updateToastRefreshButton: document.getElementById("updateToastRefreshButton"),
+    updateToastRefreshButton: document.getElementById(
+      "updateToastRefreshButton",
+    ),
   },
   inputs: {
     quality: document.getElementById("quality"),
@@ -18,7 +20,9 @@ app.ui = {
     settingsSubpage: document.querySelectorAll('[name="settingsSubpage"]'),
   },
   labels: {
-    limitWeightSuffix: document.querySelector('label[for="limitWeight"][data-suffix]'),
+    limitWeightSuffix: document.querySelector(
+      'label[for="limitWeight"][data-suffix]',
+    ),
   },
   progress: {
     container: document.querySelector(".progress-container"),
@@ -35,7 +39,7 @@ app.ui = {
     downloadAllBtn: document.getElementById("downloadAllImagesButton"),
     subpageOutput: document.getElementById("subpageOutput"),
     imageCount: document.getElementById("compressedImageCount"),
-    outputFileType: 'image/png',
+    outputFileType: "image/png",
   },
   actions: {
     abort: document.getElementById("compressAbort"),
@@ -56,13 +60,13 @@ app.ui = {
 app.config = {
   form: {
     // Default form settings
-    quality: {value: 80},
-    limitDimensions: {value: 1200},
-    limitWeightUnit: {value: "MB"},
-    limitWeight: {value: 2},
-    compressMethod: {value: "quality"},
-    dimensionMethod: {value: "original"},
-    convertMethod: {value: "default"},
+    quality: { value: 80 },
+    limitDimensions: { value: 1200 },
+    limitWeightUnit: { value: "MB" },
+    limitWeight: { value: 2 },
+    compressMethod: { value: "quality" },
+    dimensionMethod: { value: "original" },
+    convertMethod: { value: "default" },
   },
   thumbnailOptions: {
     initialQuality: 0.8,
@@ -113,13 +117,12 @@ app.state = {
 };
 
 app.lib = {
-  imageCompression: imageCompression,     // Browser Image Compression
-  heicTo: window.HeicTo,                  // heic-to
-  libheif: { HeifDecoder } = libheif(),   // libheif-js
-  icoJs: window.ICO,                      // icojs
-  pngToIco: window.PngIcoConverter,       // PNG2ICOjs
-  utif: UTIF,                             // UTIF
-  jsZip: window.JSZip                     // JSZip
+  imageCompression: imageCompression, // Browser Image Compression
+  heicTo: window.HeicTo, // heic-to
+  libheif: ({ HeifDecoder } = libheif()), // libheif-js
+  icoJs: window.ICO, // icojs
+  utif: UTIF, // UTIF
+  jsZip: window.JSZip, // JSZip
 };
 
 const ui = app.ui;
